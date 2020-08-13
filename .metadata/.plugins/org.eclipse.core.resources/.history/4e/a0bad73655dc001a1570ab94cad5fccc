@@ -1,0 +1,99 @@
+package com.revature.delegates;
+
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revature.data.AccountPostGres;
+import com.revature.data.RolePostGres;
+import com.revature.data.UserPostGres;
+import com.revature.humans.User;
+import com.revature.services.UserService;
+
+/*	ENDPOINTS
+ * 	user/login
+ *	user/ (POST) REGISTER USER
+ * 	user/:id- GET RETURN USER
+ * 			- PUT UPDATE USER
+ * 			- DELETE USER
+ */
+public class LoginDelegate implements FrontControllerDelegate {
+	private UserService uServ = new UserService(new UserPostGres(), new RolePostGres(), new AccountPostGres());
+	
+	private ObjectMapper om = new ObjectMapper();
+	
+	@Override
+	public void process(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+		String path = (String) req.getAttribute("path");
+		
+		if(path == null || path.equals("")) {
+			/// if no path its a post request
+			if("POST".equals(req.getMethod())) {
+				// register the user
+				User u = (User) om.readValue(req.getInputStream(), User.class);
+				u.setID(uServ.registerUser(u));
+				resp.getWriter().write(om.writeValueAsString(u));
+				resp.setStatus(HttpServletResponse.SC_CREATED);
+			}
+			else {
+				resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+			}
+		}
+		
+		else if (path.contains("login")) {
+				String username = req.getParameter("user");
+				String password = req.getParameter("password");
+				
+				User u = uServ.findUserbyName(username);
+				if(u != null) {
+					if(u.getPassword().equals(password)) {
+						req.getSession().setAttribute("person", u);
+						resp.getWriter().write(om.writeValueAsString(u));
+					}
+					else {
+						resp.sendError(404, "Incorrct Password");
+					}
+				}
+				
+				else {
+					resp.sendError(404, "No user found with that username");
+				}
+		}
+		else {
+			Integer id = Integer.valueOf(path);
+			switch(req.getMethod()) {
+				case "GET":
+					User u = uServ.findUserbyID(id);
+					if( u != null) {
+						resp.getWriter().write(om.writeValueAsString(u));
+					}
+					else {
+						resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+					}
+					break;
+				case "PUT":
+					String password = req.getParameter("pass");
+					User u2 = (User) req.getSession().getAttribute("Person");
+					if(u2 != null)
+						uServ.updatePassword(u2, password);
+					else
+						resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+					break;	
+				case "DELETE":
+					User u3 = om.readValue(req.getInputStream(), User.class);
+					uServ.deleteUser(u3);
+					break;
+				default:
+					resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+					break;
+			}
+		}
+		
+		
+	}
+
+}

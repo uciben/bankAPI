@@ -1,0 +1,80 @@
+package com.revature.data;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.Set;
+
+import com.revature.humans.Account;
+import com.revature.humans.AccountStatus;
+import com.revature.humans.AccountType;
+import com.revature.utils.ConnectionUtil;
+
+public class AccountPostGres implements AccountDao {
+	private ConnectionUtil cu = ConnectionUtil.getConnectionUtil();
+	@Override
+	public Integer createAccount(Account a) {
+		// TODO Auto-generated method stub
+		Integer id = 0;
+		
+		try(Connection conn = cu.getConnection()){
+			conn.setAutoCommit(false);
+			String sql = "insert into account values (default, balance, status_id, type_id)";
+			String [] keys = {"account_id"};
+			PreparedStatement pstmt = conn.prepareStatement(sql, keys);
+			pstmt.setDouble(1, a.getBalance());
+			pstmt.setInt(2, a.getAccountStatus().getStatusId());
+			pstmt.setInt(3,  a.getAccountType().getTypeId());
+			
+			
+			pstmt.executeUpdate();
+			ResultSet rs = pstmt.getGeneratedKeys();
+			
+			if(rs.next()) {
+				id = a.getAccountId();
+				conn.commit();
+			}
+			else {
+				conn.rollback();
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		return id;
+	}
+
+	@Override
+	public Account getAccountbyID(Integer id) {
+		Account acct = null;
+		
+		try(Connection conn = cu.getConnection()){
+			String sql = "select "
+		}
+	}
+
+	@Override
+	public Set<Account> getAccountbyStatus(AccountStatus status) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<Account> getAccountbyType(AccountType type) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void updateAccount(Account a) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void deleteAccount(Account a) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

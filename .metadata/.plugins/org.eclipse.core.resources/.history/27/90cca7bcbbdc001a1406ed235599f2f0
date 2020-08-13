@@ -1,0 +1,29 @@
+package com.revature.delegates;
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revature.data.AccountPostGres;
+import com.revature.data.RolePostGres;
+import com.revature.data.UserPostGres;
+import com.revature.services.UserService;
+
+/* ENDPOINTS
+	/register POST
+	 * ADMIN ONLY ALLOWED
+	 * USER ID should be 0, All fields included
+	 * Response should have updated user id
+*/
+public class RegisterDelegate implements FrontControllerDelegate{
+	private UserService uServ = new UserService(new UserPostGres(), new RolePostGres(), new AccountPostGres());
+	
+	private ObjectMapper om = new ObjectMapper();
+	
+	@Override
+	public void process(HttpServletRequest req, HttpServletResponse resp) 
+			throws ServletException, IOException {
+	}
+}

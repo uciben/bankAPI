@@ -1,0 +1,47 @@
+package com.revature.data;
+
+import java.util.Set;
+
+import com.revature.humans.Account;
+import com.revature.humans.AccountStatus;
+import com.revature.humans.AccountType;
+
+public class AccountPostGres implements AccountDao {
+
+	@Override
+	public Integer createAccount(Account a) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Account getAccountbyID() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<Account> getAccountbyStatus(AccountStatus status) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<Account> getAccountbyType(AccountType type) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void updateAccount(Account a) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void deleteAccount(Account a) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

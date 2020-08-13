@@ -1,0 +1,25 @@
+package com.revature.delegates;
+
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revature.data.AccountPostGres;
+import com.revature.data.RolePostGres;
+import com.revature.data.UserPostGres;
+import com.revature.services.UserService;
+
+public class LogoutDelegate {
+	private UserService uServ = new UserService(new UserPostGres(), new RolePostGres(), new AccountPostGres());
+	
+	private ObjectMapper om = new ObjectMapper();
+	
+	@Override
+	public void process(HttpServletRequest req, HttpServletResponse resp) 
+			throws ServletException, IOException {
+	}
+		
+}

@@ -1,0 +1,191 @@
+package com.revature.data;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.revature.humans.Account;
+import com.revature.humans.AccountStatus;
+import com.revature.humans.AccountType;
+import com.revature.utils.ConnectionUtil;
+//TODO NOT DONE
+public class AccountPostGres implements AccountDAO {
+	private ConnectionUtil cu = ConnectionUtil.getConnectionUtil();
+	@Override
+	public Integer createAccount(Account a) {
+		Integer id = 0;
+		
+		try(Connection conn = cu.getConnection()){
+			conn.setAutoCommit(false);
+			String sql = "insert into account values (default, ?, ?, ?)";
+			String [] keys = {"account_id"};
+			PreparedStatement pstmt = conn.prepareStatement(sql, keys);
+			pstmt.setDouble(1, a.getBalance());
+			pstmt.setInt(2, a.getAccountStatus().getStatusId());
+			pstmt.setInt(3,  a.getAccountType().getTypeId());
+			
+			
+			pstmt.executeUpdate();
+			ResultSet rs = pstmt.getGeneratedKeys();
+			
+			if(rs.next()) {
+				id = a.getAccountId();
+				conn.commit();
+			}
+			else {
+				conn.rollback();
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		return id;
+	}
+
+	@Override
+	public Account getAccountbyID(Integer id) {
+		Account acct = null;
+		
+		try(Connection conn = cu.getConnection()){
+			String sql = "select acc.account_id, acc.balance, acc.status_id, acc.type_id, as.status_name, at.type_name from account acc" +
+					" inner join account_status as on acc.status_id = as.status_id" +
+					" inner join account_type at on at.type_id = acc.type_id" + 
+					" where acc.account_id = ?";
+			PreparedStatement pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, id);
+			
+			ResultSet rs = pstmt.executeQuery();
+			
+			if(rs.next()) {
+				acct = new Account(id, rs.getDouble("balance"), 
+						new AccountStatus(rs.getInt("status_id"), rs.getString("status_name")),
+						new AccountType(rs.getInt("type_id"), rs.getString("type_name")));
+				System.out.println(rs.getDouble("balance"));
+			}
+			
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		return acct;
+	}
+
+	@Override
+	public Set<Account> getAccountbyStatus(AccountStatus status) {
+		Set<Account> accounts = null;
+		
+		try(Connection conn = cu.getConnection()){
+			String sql = "select acc.account_id, acc.balance, acc.status_id, acc.type_id, as.status_name, at.type_name from account acc" +
+					" inner join account_status as on acc.status_id = as.status_id" +
+					" inner join account_type at on at.type_id = acc.type_id" + 
+					" where acc.status_id_id = ?";
+			PreparedStatement pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, status.getStatusId());
+			
+			ResultSet rs = pstmt.executeQuery();
+			
+			accounts = new HashSet<>();
+			while(rs.next()) {
+				Account acct = new Account(rs.getInt("account_id"), rs.getDouble("balance"), 
+						new AccountStatus(rs.getInt("status_id"), rs.getString("status_name")),
+						new AccountType(rs.getInt("type_id"), rs.getString("type_name")));
+				accounts.add(acct);
+				
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return accounts;
+	}
+
+	@Override
+	public Set<Account> getAccountbyType(AccountType type) {
+		Set<Account> accounts = null;
+		
+		try(Connection conn = cu.getConnection()){
+			String sql = "select acc.account_id, acc.balance, acc.status_id, acc.type_id, as.status_name, at.type_name from account acc" +
+					" inner join account_status as on acc.status_id = as.status_id" +
+					" inner join account_type at on at.type_id = acc.type_id" + 
+					" where acc.type_id = ?";
+			PreparedStatement pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, type.getTypeId());
+			
+			ResultSet rs = pstmt.executeQuery();
+			
+			accounts = new HashSet<>();
+			while(rs.next()) {
+				Account acct = new Account(rs.getInt("account_id"), rs.getDouble("balance"), 
+						new AccountStatus(rs.getInt("status_id"), rs.getString("status_name")),
+						new AccountType(rs.getInt("type_id"), rs.getString("type_name")));
+				accounts.add(acct);
+				
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return accounts;
+	}
+
+	@Override
+	public void updateAccount(Account a) {
+		try (Connection conn = cu.getConnection()){
+			conn.setAutoCommit(false);
+			String sql = "update account set balance = ?, status_id = ?, type_id = ? "
+					+ "where account_id = ? ";
+			PreparedStatement pstmt = conn.prepareStatement(sql);
+			pstmt.setDouble(1, a.getBalance());
+			pstmt.setInt(2, a.getAccountStatus().getStatusId());
+			pstmt.setInt(3, a.getAccountType().getTypeId());
+			pstmt.setInt(4, a.getAccountId());
+			
+			int rowsAffected = pstmt.executeUpdate();
+			
+			if (rowsAffected > 0) {
+				conn.commit();
+			}
+			else {
+				conn.rollback();
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	@Override
+	public void deleteAccount(Account a) {
+		//TODO
+		try(Connection conn = cu.getConnection()){
+			conn.setAutoCommit(false);
+			String sql = "delete from person_account where acocunt_id = ?";	
+			PreparedStatement pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, a.getAccountId());
+			
+			int rowsAffected = pstmt.executeUpdate();
+			
+			if(rowsAffected > 0) {
+				sql = "delete from account where account_id = ?";
+				pstmt = conn.prepareStatement(sql);
+				pstmt.setInt(1, a.getAccountId());
+				pstmt.executeUpdate();
+				
+				conn.commit();
+			}
+			else {
+				conn.rollback();
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
+}

@@ -1,0 +1,16 @@
+package com.revature.data;
+import java.util.Set;
+
+import com.revature.humans.AccountStatus;
+
+
+
+public interface AccountStatusDAO {
+	public Integer createAccountStatus(AccountStatus as);
+	public AccountStatus getAccountStatusbyID(Integer id);
+	public AccountStatus getAccountStatusbyName(String name);
+	public Set<AccountStatus> getAccountStatuses();
+	public void updateAccountStatus(AccountStatus as);
+	public void deleteAccountStatus(AccountStatus as);
+	
+}

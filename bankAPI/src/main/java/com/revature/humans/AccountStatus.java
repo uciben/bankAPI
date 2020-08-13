@@ -1,0 +1,31 @@
+package com.revature.humans;
+public class AccountStatus {
+	private int statusId;
+	private String status;
+	
+	public AccountStatus(int statusId, String status) {
+		this.statusId = statusId;
+		this.status = status;
+	}
+	
+	public AccountStatus() {
+		this.statusId = 0;
+		this.status = "";
+	}
+	
+	public void setStatusId(int statusId) {
+		this.statusId = statusId;
+	}
+	
+	public int getStatusId() {
+		return this.statusId;
+	}
+	
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	
+	public String getStatus() {
+		return this.status;
+	}
+}

@@ -1,0 +1,21 @@
+package com.revature.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.revature.delegates.AccountDelegate;
+import com.revature.delegates.FrontControllerDelegate;
+import com.revature.delegates.LoginDelegate;
+import com.revature.delegates.UserDelegate;
+
+public class RequestHandler {
+	private Map<String, FrontControllerDelegate> delegateMap;
+	
+	{
+			delegateMap = new HashMap<String, FrontControllerDelegate>();
+			
+			delegateMap.put("account", new AccountDelegate());
+			delegateMap.put("user", new LoginDelegate());
+			delegateMap.put("employee", new UserDelegate();
+	}
+}

@@ -1,0 +1,37 @@
+package com.revature.data;
+
+import com.revature.humans.AccountStatus;
+
+public class AccountStatusPostGres implements AccountStatusDAO {
+
+	@Override
+	public Integer createAccountStatus(AccountStatus as) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public AccountStatus getAccountStatusbyID(Integer id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public AccountStatus getAccountStatusbyName(String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void updateAccountStatus(AccountStatus as) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void deleteAccountStatus(AccountStatus as) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

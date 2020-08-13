@@ -1,0 +1,333 @@
+package com.revature.delegates;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.revature.data.AccountPostGres;
+import com.revature.data.RolePostGres;
+import com.revature.data.UserPostGres;
+import com.revature.humans.Account;
+import com.revature.humans.AccountStatus;
+import com.revature.humans.AccountType;
+import com.revature.humans.User;
+import com.revature.services.UserService;
+import com.revature.data.AccountStatusPostGres;
+import com.revature.services.AccountService;
+import com.revature.data.AccountTypePostGres;
+/*
+ *  ENDPOINTS
+ *  / GET ONLY ADMIN OR EMPLOYEE
+ *  / POST ONLY ADMIN OR EMPLOYEE / I remove basic user access -> creates account , return status code 201,new acc
+ *  / PUT Admin -> update account, return account
+ *  /:id GET ONLY ADMIN OR EMPLOYEE or id beling to user -> return account
+ *  /status/:statusId GET ADMIN OR EMPLOYEE -> return accounts which have statusID
+ *  /owner/:userId Get ADMIN OR EMPLOYEE or current user = id -> return accounts owned by owner
+ *  /withdraw POST Admin or current user owns -> message
+ *  /deposit POST Admin or current user owns -> message
+ *  /transfer Post Admin or current user owns source acc ->message
+ *  
+ *  
+ */
+public class AccountDelegate implements FrontControllerDelegate{
+	private UserService uServ = new UserService(new UserPostGres(), new RolePostGres(), new AccountPostGres());
+	private AccountService accServ = new AccountService(new AccountPostGres(), new AccountStatusPostGres(),
+			new AccountTypePostGres(), new UserPostGres());
+	
+	private ObjectMapper om = new ObjectMapper();
+	
+	@Override
+	public void process(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		String path = (String) req.getAttribute("path");
+		
+		if(path == null || path.equals("")) {
+			switch(req.getMethod()) {
+				case "GET":
+					// ADMIN OR EMPLOYEE GETS ALL ACC
+					getAllAccounts(req, resp);
+					break;
+				case "POST":
+					// ADMIN OR EMPLOYEE CREATES NEW ACC
+					submitAccount(req, resp);
+					break;
+				case "PUT":
+					// ADMIN UPDATE ACC
+					updateAccount(req, resp);
+					break;
+				default:
+					resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+					break;
+			}
+		}
+		else if(path.contains("status")) {
+			//gets :statusId
+			String statusIdString = path.substring(path.indexOf("/") + 1);
+			
+			getAccountsbyStatusId(req, resp, Integer.valueOf(statusIdString));
+		}
+		else if(path.contains("owner")) {
+			//gets :userId
+			String userIdString = path.substring(path.indexOf("/") + 1);
+			
+			getAccountsbyUserId(req, resp, Integer.valueOf(userIdString));
+		}
+		else if(path.contains("withdraw")) {
+			// withdraw
+			int accountId = Integer.valueOf(req.getParameter("accountId"));
+			double amount = Double.valueOf(req.getParameter("amount"));
+			accountWithdraw(req, resp, accountId, amount);
+		}
+		else if(path.contains("deposit")) {
+			// deposit
+			int accountId = Integer.valueOf(req.getParameter("accountId"));
+			double amount = Double.valueOf(req.getParameter("amount"));
+			accountDeposit(req, resp, accountId, amount);
+		}
+		else if(path.contains("transfer")) {
+			
+			// transfer
+			int sourceAccountId = Integer.valueOf(req.getParameter("sourceAccountId"));
+			int targetAccountId = Integer.valueOf(req.getParameter("targetAccountId"));
+			double amount = Double.valueOf(req.getParameter("amount"));
+			accountTransfer(req, resp, sourceAccountId, targetAccountId, amount);
+		}
+		// :id
+		else {
+			getAccountbyId(req, resp, Integer.valueOf(path));
+		}
+	}
+	
+	private void getAllAccounts(HttpServletRequest req, HttpServletResponse resp) throws IOException{
+		User currentUser = (User) req.getSession().getAttribute("user");
+		if(isAdminOrEmployee(currentUser)) {
+			Set<Account> allAccounts = new HashSet<Account>();
+			for(AccountStatus at: accServ.getAccountStatuses()) {
+				if(accServ.getAccountbyStatus(at) != null)
+					allAccounts.addAll(accServ.getAccountbyStatus(at));
+			}
+			resp.getWriter().write(om.writeValueAsString(allAccounts));
+		}
+		else {
+			resp.sendError(401, "The request action is not permitted");
+		}
+	}
+	
+	private void updateAccount(HttpServletRequest req, HttpServletResponse resp) throws IOException{
+		User currentUser = (User) req.getSession().getAttribute("user");
+		//Map<String, Object> jsonMap =  om.readValue(req.getInputStream(), Map.class);
+		
+		//Integer accountId = (Integer) jsonMap.get("accountId");
+		//Double balance = (Double) jsonMap.get("balance");
+		//Integer statusId = (Integer) jsonMap.get("statusId");
+		//Integer typeId = (Integer) jsonMap.get("typeId");
+		AccountDelegate.Account updateAccount = (Account) om.readValue(req.getInputStream(), Account.class);
+
+		// Above Doesnt Map thing doesnt work
+		if(isAdmin(currentUser)) {
+			//AccountStatus theStatus = accServ.getAccountStatusbyId(statusId);
+			//AccountDelegateAccountType theType = accServ.getAccountTypebyId(typeId);
+			
+			if(accountId > -1) { //&& theStatus != null && theType != null) {
+				Account theAccount = accServ.getAccountbyID(updateAccount.getAccountId());
+				theAccount.setAccountStatus(updateAccount.getAccountStatus());
+				theAccount.setAccountType(updateAccount.getAccountType());
+				theAccount.setBalance(updateAccount.getBalance());
+				accServ.updateAccount(theAccount);
+				resp.getWriter().write(om.writeValueAsString(theAccount));
+			}
+			else {
+				resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+			}
+		}
+		else {
+			resp.sendError(401, "The request action is not permitted");
+		}
+	}
+	
+	private void submitAccount(HttpServletRequest req, HttpServletResponse resp) throws IOException{
+		User currentUser = (User) req.getSession().getAttribute("user");
+		Map<String, Object> jsonMap =  om.readValue(req.getInputStream(), Map.class);
+		
+		Integer accountId = (Integer) jsonMap.get("account_id");
+		Double balance = (Double) jsonMap.get("balance");
+		Integer statusId = (Integer) jsonMap.get("status_id");
+		Integer typeId = (Integer) jsonMap.get("type_id");
+		if(isAdminOrEmployee(currentUser)) {
+			AccountStatus theStatus = accServ.getAccountStatusbyId(statusId);
+			AccountType theType = accServ.getAccountTypebyId(typeId);
+			
+			if(accountId == 0 && theStatus != null && theType != null) {
+				Account newAccount = new Account(accountId, balance, theStatus, theType);
+				accServ.addAccount(newAccount);
+				accServ.ownAccount(currentUser, newAccount);
+				resp.setStatus(201);
+				resp.getWriter().write(om.writeValueAsString(newAccount));
+			}
+			else {
+				resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+			}
+		}
+		else {
+			resp.sendError(401, "The request action is not permitted");
+		}
+	}
+	
+	private void accountTransfer(HttpServletRequest req, HttpServletResponse resp, Integer sourceAccountId,
+			Integer targetAccountId, Double amount) throws IOException{
+		User currentUser = (User) req.getSession().getAttribute("user");
+		if(req.getMethod().equals("POST")) {
+			Account sourceAccount = accServ.getAccountbyID(sourceAccountId);
+			Account targetAccount = accServ.getAccountbyID(targetAccountId);
+			if(sourceAccount != null && targetAccount != null) {
+				Set<Account> ownerAccounts = currentUser.getAccounts();
+				if(ownerAccounts.contains(sourceAccount) || isAdmin(currentUser)) {
+					sourceAccount.setBalance(sourceAccount.getBalance() - amount);
+					targetAccount.setBalance(targetAccount.getBalance() + amount);
+					accServ.updateAccount(sourceAccount);
+					accServ.updateAccount(targetAccount);
+					resp.getWriter().write(String.format("$%.2f has been transferred from Account #%d to Account #%d", 
+							amount, sourceAccountId, targetAccountId));
+				}
+				else {
+					resp.sendError(401, "The request action is not permitted");
+				}
+			}
+			else {
+				resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+		else {
+			resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+		}
+	}
+	
+	private void getAccountsbyStatusId(HttpServletRequest req, HttpServletResponse resp, Integer statusId) 
+		throws IOException{
+		User currentUser = (User)req.getSession().getAttribute("user");
+			if(req.getMethod().equals("GET"))
+				if(isAdminOrEmployee(currentUser)) {
+					Set<Account> accounts = null;
+					for (AccountStatus s: accServ.getAccountStatuses()) {
+						if(s.getStatusId() == statusId)
+							accounts = accServ.getAccountbyStatus(s);
+					}
+					if(accounts != null) 
+						resp.getWriter().write(om.writeValueAsString(accounts));
+					else
+						resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+				}
+				else {
+					resp.sendError(401, "The request action is not permitted");
+				}
+			else {
+				resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+			}
+	}
+	
+	private void accountDeposit(HttpServletRequest req, HttpServletResponse resp, Integer accountId, Double amount)
+			throws IOException{
+		User currentUser = (User) req.getSession().getAttribute("user");
+		if(req.getMethod().equals("POST")) {
+			Account currentAccount = accServ.getAccountbyID(accountId);
+			if (currentAccount != null) {
+				Set<Account> ownerAccounts = currentUser.getAccounts();
+				if(ownerAccounts.contains(currentAccount) || isAdmin(currentUser)) {
+					currentAccount.setBalance(currentAccount.getBalance() + amount);
+					accServ.updateAccount(currentAccount);
+					resp.getWriter().write(String.format("$%.2f has been deposited to Account #%d",amount, accountId));
+				}
+				else {
+					resp.sendError(401, "The request action is not permitted");
+				}
+			}
+			else {
+				resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+		else {
+			resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+		}
+	}
+	
+	private void accountWithdraw(HttpServletRequest req, HttpServletResponse resp, Integer accountId, Double amount)
+			throws IOException{
+		User currentUser = (User) req.getSession().getAttribute("user");
+		if(req.getMethod().equals("POST")) {
+			Account currentAccount = accServ.getAccountbyID(accountId);
+			if(currentAccount != null) {
+				Set<Account> ownerAccounts = currentUser.getAccounts();
+				if(ownerAccounts.contains(currentAccount) || isAdmin(currentUser)) {
+					currentAccount.setBalance(currentAccount.getBalance() - amount);
+					accServ.updateAccount(currentAccount);
+					resp.getWriter().write(String.format("$%.2f has been withdrawn from Account #%d",amount,accountId)) ;
+				}
+				else {
+					resp.sendError(401, "The request action is not permitted");
+				}	
+			}
+			else {
+				resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+		else {
+			resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+		}
+	}
+
+	private void getAccountbyId(HttpServletRequest req, HttpServletResponse resp, Integer accountId)
+			throws IOException {
+		
+		User currentUser = (User) req.getSession().getAttribute("user");
+		Account foundAccount = accServ.getAccountbyID(accountId);
+		
+		if(isAdminOrEmployee(currentUser) || currentUser.getAccounts().contains(foundAccount)) {
+			if(req.getMethod().equals("GET")) {
+				if(foundAccount != null) {
+					resp.getWriter().write(om.writeValueAsString(foundAccount));
+				}
+				else {
+					resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+				}
+			}
+			else{
+				resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+			}
+		}
+		else {
+			resp.sendError(401, "The request action is not permitted");
+		}
+	}
+	
+	private void getAccountsbyUserId(HttpServletRequest req, HttpServletResponse resp, Integer userId)
+			throws IOException{
+		User currentUser = (User) req.getSession().getAttribute("user");
+		if(req.getMethod().equals("GET")){
+			if(isAdminOrEmployee(currentUser) || currentUser.getId() == userId) {
+				if(uServ.findUserbyID(userId) != null)
+				
+					resp.getWriter().write(om.writeValueAsString(uServ.findUserbyID(userId).getAccounts()));
+				else 
+					resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+		else {
+			resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+		}
+	}
+	
+	private boolean isAdminOrEmployee(User currentUser) {
+		return (isAdmin(currentUser) || currentUser.getRole().getRole().equals("Employee"));
+	}
+	
+	private boolean isAdmin(User currentUser) {
+		if (currentUser != null)
+			return currentUser.getRole().getRole().equals("Admin");
+		return false;
+    }
+}

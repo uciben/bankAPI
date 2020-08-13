@@ -1,0 +1,37 @@
+package com.revature.data;
+
+import com.revature.humans.AccountType;
+
+public class AccountTypePostGres implements AccountTypeDAO {
+
+	@Override
+	public Integer createAccountType(AccountType type) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public AccountType getAccountTypebyID(Integer id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public AccountType getAccountTypebyType(String type) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void updateAccountType(AccountType type) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void deleteAccountType(AccountType type) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

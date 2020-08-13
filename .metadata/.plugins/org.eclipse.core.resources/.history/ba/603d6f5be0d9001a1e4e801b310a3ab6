@@ -1,0 +1,103 @@
+package com.revature.data;
+
+import com.revature.humans.AccountType;
+import com.revature.utils.ConnectionUtil;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.PreparedStatement;
+import java.util.HashSet;
+
+public class AccountTypePostGres implements AccountTypeDAO {
+	private ConnectionUtil cu =  ConnectionUtil.getConnectionUtil();
+	
+	@Override
+	public Integer createAccountType(AccountType type) {
+		Integer id = 0;
+		
+		try(Connection conn = cu.getConnection()){
+			conn.setAutoCommit(false);
+			String sql = "insert into account_status values (default, ?)";
+			String [] keys = {"status_id"};
+			PreparedStatement pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, type.getType());
+			
+			pstmt.executeUpdate();
+			ResultSet rs = pstmt.getGeneratedKeys();
+			
+			if(rs.next()) {
+				id = rs.getInt("status_id");
+				conn.commit();
+			}
+			else {
+				conn.rollback();
+			}
+			
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return id;
+	}
+
+	@Override
+	public AccountType getAccountTypebyID(Integer id) {
+		AccountType at = null;
+		
+		try(Connection conn = cu.getConnection()){
+			String sql = "select * from account_status where status_id = ?";
+			PreparedStatement pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, id);
+			
+			ResultSet rs = pstmt.executeQuery();
+			
+			if(rs.next()) {
+				at = new AccountType(rs.getInt("status_id"), rs.getString("status_name"));
+				
+			}
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return at;
+	}
+
+	@Override
+	public AccountType getAccountTypebyType(String type) {
+		AccountType at = null;
+		
+		try(Connection conn = cu.getConnection()){
+			String sql = "select * from account_status where status_name = ?";
+			PreparedStatement pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, type);
+			
+			ResultSet rs = pstmt.executeQuery();
+			
+			if(rs.next()) {
+				at = new AccountType(rs.getInt("status_id"), rs.getString("status_name"));
+				
+			}
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return at;
+	}
+	}
+
+	@Override
+	public void updateAccountType(AccountType type) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void deleteAccountType(AccountType type) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

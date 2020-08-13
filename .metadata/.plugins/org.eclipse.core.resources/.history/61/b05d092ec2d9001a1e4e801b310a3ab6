@@ -1,0 +1,65 @@
+package com.revature.data;
+
+import java.util.Set;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.revature.humans.Role;
+import com.revature.humans.User;
+import com.revature.utils.ConnectionUtil;
+
+public class UserPostGres implements UserDAO {
+
+	@Override
+	public void createUser(User u) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public User getUserbyID(int id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public User getUserbyEmail(String email) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public User getUserbyName(String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public User getUserbyUsernameAndPassword(String username, String password) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<User> getUserbyRole(Role r) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void updateUser(User u) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void deleteUser(User u) {
+		// TODO Auto-generated method stub
+
+	}
+
+}
